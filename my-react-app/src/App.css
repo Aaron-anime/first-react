@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -12,21 +16,20 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   padding: 10px;
-  box-sizing: border-box;
+  padding-top: 20px;
 }
 
 .App {
   width: 100%;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 30px;
   background-color: #ffffff;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
 }
 
 h1 {
@@ -41,35 +44,210 @@ h2 {
   border-bottom: 2px solid #667eea;
   padding-bottom: 10px;
   margin-top: 30px;
+  margin-bottom: 20px;
 }
 
-.add-employee-section {
-  background-color: #f5f7fa;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 30px;
+h3 {
+  color: #667eea;
+}
+
+/* TABS */
+.tabs {
   display: flex;
-  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #eee;
 }
 
-.add-employee-section input {
-  padding: 12px;
-  width: 100%;
-  margin-bottom: 10px;
-  border: 2px solid #ddd;
+.tab-btn {
+  padding: 12px 20px;
+  border: none;
+  background-color: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.tab-btn.active {
+  background-color: #667eea;
+  color: white;
+  border-bottom: 3px solid #764ba2;
+}
+
+/* DATE SELECTOR */
+.date-selector {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+}
+
+.date-selector label {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.date-selector input {
+  padding: 10px;
+  border: 2px solid #667eea;
   border-radius: 6px;
   font-size: 14px;
-  transition: border-color 0.3s;
-  box-sizing: border-box;
 }
 
-.add-employee-section input:last-of-type {
+/* STATS CONTAINER */
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+  margin: 0 0 10px 0;
+  color: white;
+  font-size: 14px;
+}
+
+.stat-card p {
+  margin: 0;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.stat-card.present {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+}
+
+.stat-card.absent {
+  background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
+}
+
+.stat-card.leave {
+  background: linear-gradient(135deg, #ff9800 0%, #e68900 100%);
+}
+
+.stat-card.not-marked {
+  background: linear-gradient(135deg, #9c9c9c 0%, #707070 100%);
+}
+
+/* ATTENDANCE SECTION */
+.attendance-section {
+  margin-top: 30px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.attendance-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.attendance-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.attendance-table th {
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.attendance-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+}
+
+.attendance-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.attendance-table tbody tr.status-present {
+  border-left: 4px solid #4caf50;
+}
+
+.attendance-table tbody tr.status-absent {
+  border-left: 4px solid #f44336;
+}
+
+.attendance-table tbody tr.status-leave {
+  border-left: 4px solid #ff9800;
+}
+
+.attendance-table tbody tr.status-not-marked {
+  border-left: 4px solid #9c9c9c;
+}
+
+.status span.badge {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+}
+
+.badge.present {
+  background-color: #4caf50;
+}
+
+.badge.absent {
+  background-color: #f44336;
+}
+
+.badge.leave {
+  background-color: #ff9800;
+}
+
+.badge.not-marked {
+  background-color: #9c9c9c;
+}
+
+/* ACTIONS */
+.actions {
+  white-space: nowrap;
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.actions button {
+  padding: 8px 12px;
+  font-size: 11px;
   margin-right: 0;
 }
 
-.add-employee-section input:focus {
-  outline: none;
-  border-color: #667eea;
+.completed {
+  display: inline-block;
+  padding: 8px 12px;
+  background-color: #4caf50;
+  color: white;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 button {
@@ -114,6 +292,42 @@ button {
   background-color: #e68900;
 }
 
+.btn-break {
+  background-color: #2196f3;
+  color: white;
+}
+
+.btn-break:hover {
+  background-color: #0b7dda;
+}
+
+.btn-break-end {
+  background-color: #673ab7;
+  color: white;
+}
+
+.btn-break-end:hover {
+  background-color: #5e35b1;
+}
+
+.btn-absent {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn-absent:hover {
+  background-color: #da190b;
+}
+
+.btn-leave {
+  background-color: #ff9800;
+  color: white;
+}
+
+.btn-leave:hover {
+  background-color: #e68900;
+}
+
 .btn-remove {
   background-color: #f44336;
   color: white;
@@ -123,81 +337,134 @@ button {
   background-color: #da190b;
 }
 
-.attendance-section {
+/* EMPLOYEES SECTION */
+.employees-section {
   margin-top: 30px;
 }
 
-.attendance-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow-x: auto;
+.employee-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
 }
 
-.attendance-table thead {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.attendance-table th {
-  padding: 15px;
-  text-align: left;
-  font-weight: 600;
+.employee-form input,
+.employee-form select {
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
   font-size: 14px;
+  transition: border-color 0.3s;
 }
 
-.attendance-table td {
-  padding: 12px 15px;
-  border-bottom: 1px solid #eee;
+.employee-form input:focus,
+.employee-form select:focus {
+  outline: none;
+  border-color: #667eea;
 }
 
-.attendance-table tbody tr:hover {
+.employee-form .btn-add {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.employees-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.employee-card {
   background-color: #f9f9f9;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.3s ease;
 }
 
-.attendance-table tbody tr.status-clocked-in {
-  background-color: #e8f5e9;
+.employee-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #667eea;
 }
 
-.attendance-table tbody tr.status-clocked-out {
-  background-color: #fff3e0;
+.emp-info h3 {
+  margin-top: 0;
+  color: #667eea;
 }
 
-.attendance-table tbody tr.status-not-clocked-in {
-  background-color: #ffebee;
+.emp-info p {
+  margin: 8px 0;
+  font-size: 13px;
+  color: #666;
 }
 
-.status {
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 4px;
+.employee-card .btn-remove {
+  margin-top: 15px;
+  width: 100%;
+}
+
+/* REPORTS SECTION */
+.reports-section {
+  margin-top: 30px;
+}
+
+.report-container {
+  background-color: #f5f7fa;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.report-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.report-card {
+  background-color: white;
+  border-left: 4px solid #667eea;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.report-card h4 {
+  margin: 0 0 5px 0;
+  color: #667eea;
+}
+
+.report-card p {
+  margin: 5px 0;
   font-size: 12px;
+  color: #666;
 }
 
-.status-clocked-in .status {
-  background-color: #4caf50;
-  color: white;
+.report-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
 }
 
-.status-clocked-out .status {
-  background-color: #ff9800;
-  color: white;
-}
-
-.status-not-clocked-in .status {
-  background-color: #f44336;
-  color: white;
-}
-
-.actions {
-  white-space: nowrap;
-}
-
-.actions button {
-  padding: 8px 12px;
+.report-details span {
   font-size: 12px;
-  margin-right: 5px;
+  color: #666;
+}
+
+.report-details strong {
+  color: #667eea;
+  font-size: 14px;
 }
 
 p {
@@ -206,50 +473,54 @@ p {
   font-style: italic;
 }
 
-li {
-  background-color: #f3e5f5;
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 4px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* Tablet responsiveness (768px and below) */
+/* RESPONSIVE DESIGN */
 @media (max-width: 768px) {
   .container {
-    padding: 15px;
-    justify-content: flex-start;
-    padding-top: 20px;
+    padding: 10px;
+    padding-top: 15px;
   }
 
   .App {
     padding: 20px;
-    max-width: 100%;
   }
 
   h1 {
     font-size: 2em;
-    margin-bottom: 20px;
   }
 
   h2 {
     font-size: 1.3em;
   }
 
-  .add-employee-section {
-    padding: 15px;
+  .stats-container {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .add-employee-section input {
-    padding: 10px;
-    font-size: 16px;
-    margin-bottom: 8px;
+  .stat-card p {
+    font-size: 24px;
+  }
+
+  .tabs {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tab-btn {
+    width: 100%;
+    border-radius: 6px;
+  }
+
+  .tab-btn.active {
+    border-bottom: 3px solid #764ba2;
+  }
+
+  .date-selector {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .attendance-table {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .attendance-table th,
@@ -257,23 +528,22 @@ li {
     padding: 10px 8px;
   }
 
-  .actions button {
-    padding: 6px 10px;
-    font-size: 11px;
-    margin-right: 3px;
+  .employee-form {
+    grid-template-columns: 1fr;
   }
 
-  button {
-    padding: 10px 15px;
-    font-size: 13px;
+  .employees-list {
+    grid-template-columns: 1fr;
+  }
+
+  .report-stats {
+    grid-template-columns: 1fr;
   }
 }
 
-/* Mobile responsiveness (480px and below) */
 @media (max-width: 480px) {
   .container {
-    padding: 10px;
-    padding-top: 15px;
+    padding: 8px;
   }
 
   .App {
@@ -282,33 +552,42 @@ li {
 
   h1 {
     font-size: 1.5em;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
   }
 
   h2 {
     font-size: 1.1em;
-    margin-top: 20px;
   }
 
-  .add-employee-section {
-    padding: 12px;
-    margin-bottom: 20px;
+  .stats-container {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
-  .add-employee-section input {
-    padding: 10px;
-    font-size: 16px;
-    margin-bottom: 8px;
+  .stat-card {
+    padding: 15px;
   }
 
-  .btn-add {
+  .stat-card p {
+    font-size: 28px;
+  }
+
+  .tabs {
+    gap: 5px;
+  }
+
+  .tab-btn {
     padding: 10px 15px;
     font-size: 12px;
   }
 
+  .date-selector {
+    padding: 10px;
+    gap: 10px;
+  }
+
   .attendance-table {
-    font-size: 12px;
-    margin-top: 15px;
+    font-size: 11px;
   }
 
   .attendance-table th,
@@ -316,41 +595,37 @@ li {
     padding: 8px 6px;
   }
 
-  .attendance-table th {
-    font-size: 11px;
-  }
-
   .actions {
-    white-space: normal;
-    display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 3px;
   }
 
   .actions button {
-    padding: 5px 8px;
+    padding: 6px 10px;
     font-size: 10px;
-    margin-right: 0;
-    flex: 1;
-    min-width: 50px;
+    width: 100%;
+  }
+
+  .employee-form {
+    gap: 10px;
+  }
+
+  .employee-form input,
+  .employee-form select {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .report-details {
+    grid-template-columns: 1fr;
   }
 
   button {
     padding: 10px 12px;
     font-size: 12px;
   }
-
-  .status {
-    padding: 4px 8px;
-    font-size: 11px;
-  }
-
-  p {
-    font-size: 14px;
-  }
 }
 
-/* Extra small devices (320px and below) */
 @media (max-width: 320px) {
   .App {
     padding: 10px;
@@ -360,18 +635,8 @@ li {
     font-size: 1.2em;
   }
 
-  .add-employee-section {
-    padding: 10px;
-  }
-
-  .attendance-table th,
-  .attendance-table td {
-    padding: 6px 4px;
-  }
-
-  .actions button {
-    padding: 4px 6px;
-    font-size: 9px;
+  .stat-card p {
+    font-size: 20px;
   }
 }
 

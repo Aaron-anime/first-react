@@ -1,9 +1,25 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 function App() {
   const [employees, setEmployees] = useState([]);
-  const [newEmployee, setNewEmployee] = useState({ name: '', employeeId: '' });
+  const [newEmployee, setNewEmployee] = useState({ name: '', employeeId: '', department: '', position: '', shift: '9-5' });
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [view, setView] = useState('attendance'); // attendance, reports, employees
+  const [breakTime, setBreakTime] = useState({});
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('attendanceData');
+    if (saved) {
+      setEmployees(JSON.parse(saved));
+    }
+  }, []);
+
+  // Save to localStorage whenever employees change
+  useEffect(() => {
+    localStorage.setItem('attendanceData', JSON.stringify(employees));
+  }, [employees]);
 
   const addEmployee = () => {
     if (newEmployee.name.trim() && newEmployee.employeeId.trim()) {
@@ -13,36 +29,155 @@ function App() {
           id: Date.now(),
           name: newEmployee.name.trim(),
           employeeId: newEmployee.employeeId.trim(),
-          clockInTime: null,
-          clockOutTime: null,
-          status: 'not-clocked-in',
-          hoursWorked: 0,
+          department: newEmployee.department.trim(),
+          position: newEmployee.position.trim(),
+          shift: newEmployee.shift,
+          attendanceRecords: {},
         },
       ]);
-      setNewEmployee({ name: '', employeeId: '' });
+      setNewEmployee({ name: '', employeeId: '', department: '', position: '', shift: '9-5' });
     }
   };
 
   const clockIn = (empId) => {
+    const today = selectedDate;
     setEmployees(
-      employees.map((emp) =>
-        emp.id === empId
-          ? { ...emp, clockInTime: new Date(), status: 'clocked-in' }
-          : emp
-      )
+      employees.map((emp) => {
+        if (emp.id === empId) {
+          const record = emp.attendanceRecords[today] || { date: today, status: 'present', breaks: [] };
+          return {
+            ...emp,
+            attendanceRecords: {
+              ...emp.attendanceRecords,
+              [today]: {
+                ...record,
+                clockInTime: new Date().toLocaleTimeString(),
+                status: 'present',
+              },
+            },
+          };
+        }
+        return emp;
+      })
     );
   };
 
   const clockOut = (empId) => {
+    const today = selectedDate;
     setEmployees(
       employees.map((emp) => {
-        if (emp.id === empId && emp.clockInTime) {
-          const hours = (new Date() - emp.clockInTime) / (1000 * 60 * 60);
+        if (emp.id === empId) {
+          const record = emp.attendanceRecords[today] || { date: today, status: 'present', breaks: [] };
+          const inTime = record.clockInTime ? new Date(`${today} ${record.clockInTime}`) : null;
+          const outTime = new Date();
+          let hoursWorked = 0;
+          if (inTime) {
+            hoursWorked = ((outTime - inTime) / (1000 * 60 * 60)).toFixed(2);
+          }
           return {
             ...emp,
-            clockOutTime: new Date(),
-            status: 'clocked-out',
-            hoursWorked: hours.toFixed(2),
+            attendanceRecords: {
+              ...emp.attendanceRecords,
+              [today]: {
+                ...record,
+                clockOutTime: new Date().toLocaleTimeString(),
+                hoursWorked: parseFloat(hoursWorked),
+                status: 'present',
+              },
+            },
+          };
+        }
+        return emp;
+      })
+    );
+  };
+
+  const startBreak = (empId) => {
+    const today = selectedDate;
+    setEmployees(
+      employees.map((emp) => {
+        if (emp.id === empId) {
+          const record = emp.attendanceRecords[today] || { date: today, status: 'present', breaks: [] };
+          return {
+            ...emp,
+            attendanceRecords: {
+              ...emp.attendanceRecords,
+              [today]: {
+                ...record,
+                breakStartTime: new Date().toLocaleTimeString(),
+                onBreak: true,
+              },
+            },
+          };
+        }
+        return emp;
+      })
+    );
+  };
+
+  const endBreak = (empId) => {
+    const today = selectedDate;
+    setEmployees(
+      employees.map((emp) => {
+        if (emp.id === empId) {
+          const record = emp.attendanceRecords[today] || { date: today, status: 'present', breaks: [] };
+          const newBreak = {
+            start: record.breakStartTime,
+            end: new Date().toLocaleTimeString(),
+          };
+          return {
+            ...emp,
+            attendanceRecords: {
+              ...emp.attendanceRecords,
+              [today]: {
+                ...record,
+                breaks: [...(record.breaks || []), newBreak],
+                onBreak: false,
+                breakStartTime: null,
+              },
+            },
+          };
+        }
+        return emp;
+      })
+    );
+  };
+
+  const markAbsent = (empId) => {
+    const today = selectedDate;
+    setEmployees(
+      employees.map((emp) => {
+        if (emp.id === empId) {
+          return {
+            ...emp,
+            attendanceRecords: {
+              ...emp.attendanceRecords,
+              [today]: {
+                date: today,
+                status: 'absent',
+              },
+            },
+          };
+        }
+        return emp;
+      })
+    );
+  };
+
+  const markLeave = (empId) => {
+    const today = selectedDate;
+    setEmployees(
+      employees.map((emp) => {
+        if (emp.id === empId) {
+          return {
+            ...emp,
+            attendanceRecords: {
+              ...emp.attendanceRecords,
+              [today]: {
+                date: today,
+                status: 'leave',
+              },
+            },
           };
         }
         return emp;
@@ -54,81 +189,279 @@ function App() {
     setEmployees(employees.filter((emp) => emp.id !== empId));
   };
 
-  const formatTime = (date) => {
-    return date ? new Date(date).toLocaleTimeString() : '-';
+  const getAttendanceStatus = (emp) => {
+    const record = emp.attendanceRecords[selectedDate];
+    return record ? record.status : 'not-marked';
   };
+
+  const calculateDailyStats = () => {
+    const present = employees.filter((emp) => getAttendanceStatus(emp) === 'present').length;
+    const absent = employees.filter((emp) => getAttendanceStatus(emp) === 'absent').length;
+    const leave = employees.filter((emp) => getAttendanceStatus(emp) === 'leave').length;
+    const notMarked = employees.filter((emp) => getAttendanceStatus(emp) === 'not-marked').length;
+    return { present, absent, leave, notMarked };
+  };
+
+  const getTotalHoursWorked = (emp) => {
+    const record = emp.attendanceRecords[selectedDate];
+    return record?.hoursWorked || 0;
+  };
+
+  const getBreakSummary = (emp) => {
+    const record = emp.attendanceRecords[selectedDate];
+    if (!record || !record.breaks) return '0h 0m';
+    let totalMinutes = 0;
+    record.breaks.forEach((brk) => {
+      if (brk.start && brk.end) {
+        const start = new Date(`${selectedDate} ${brk.start}`);
+        const end = new Date(`${selectedDate} ${brk.end}`);
+        totalMinutes += (end - start) / (1000 * 60);
+      }
+    });
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.floor(totalMinutes % 60);
+    return `${hours}h ${minutes}m`;
+  };
+
+  const stats = calculateDailyStats();
 
   return (
     <div className="container">
       <div className="App">
-        <h1>Work Attendance System</h1>
-        
-        <div className="add-employee-section">
-        <h2>Add Employee</h2>
-        <input
-          type="text"
-          value={newEmployee.name}
-          onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
-          placeholder="Employee Name"
-        />
-        <input
-          type="text"
-          value={newEmployee.employeeId}
-          onChange={(e) => setNewEmployee({ ...newEmployee, employeeId: e.target.value })}
-          placeholder="Employee ID"
-        />
-        <button onClick={addEmployee} className="btn-add">
-          Add Employee
-        </button>
-      </div>
+        <h1>Real Work Attendance System</h1>
 
-      <div className="attendance-section">
-        <h2>Attendance Records</h2>
-        {employees.length === 0 ? (
-          <p>No employees added yet.</p>
-        ) : (
-          <table className="attendance-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Employee ID</th>
-                <th>Status</th>
-                <th>Clock In Time</th>
-                <th>Clock Out Time</th>
-                <th>Hours Worked</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((emp) => (
-                <tr key={emp.id} className={`status-${emp.status}`}>
-                  <td>{emp.name}</td>
-                  <td>{emp.employeeId}</td>
-                  <td className="status">{emp.status.replace('-', ' ').toUpperCase()}</td>
-                  <td>{formatTime(emp.clockInTime)}</td>
-                  <td>{formatTime(emp.clockOutTime)}</td>
-                  <td>{emp.hoursWorked} hrs</td>
-                  <td className="actions">
-                    {emp.status === 'not-clocked-in' && (
-                      <button onClick={() => clockIn(emp.id)} className="btn-clock-in">
-                        Clock In
-                      </button>
-                    )}
-                    {emp.status === 'clocked-in' && (
-                      <button onClick={() => clockOut(emp.id)} className="btn-clock-out">
-                        Clock Out
-                      </button>
-                    )}
+        <div className="tabs">
+          <button
+            className={`tab-btn ${view === 'attendance' ? 'active' : ''}`}
+            onClick={() => setView('attendance')}
+          >
+            Daily Attendance
+          </button>
+          <button
+            className={`tab-btn ${view === 'employees' ? 'active' : ''}`}
+            onClick={() => setView('employees')}
+          >
+            Manage Employees
+          </button>
+          <button
+            className={`tab-btn ${view === 'reports' ? 'active' : ''}`}
+            onClick={() => setView('reports')}
+          >
+            Reports
+          </button>
+        </div>
+
+        {view === 'attendance' && (
+          <>
+            <div className="date-selector">
+              <label>Select Date: </label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
+
+            <div className="stats-container">
+              <div className="stat-card present">
+                <h3>Present</h3>
+                <p>{stats.present}</p>
+              </div>
+              <div className="stat-card absent">
+                <h3>Absent</h3>
+                <p>{stats.absent}</p>
+              </div>
+              <div className="stat-card leave">
+                <h3>Leave</h3>
+                <p>{stats.leave}</p>
+              </div>
+              <div className="stat-card not-marked">
+                <h3>Not Marked</h3>
+                <p>{stats.notMarked}</p>
+              </div>
+            </div>
+
+            <div className="attendance-section">
+              <h2>Attendance Records</h2>
+              {employees.length === 0 ? (
+                <p>No employees added yet.</p>
+              ) : (
+                <div className="table-wrapper">
+                  <table className="attendance-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Employee ID</th>
+                        <th>Department</th>
+                        <th>Clock In</th>
+                        <th>Clock Out</th>
+                        <th>Hours Worked</th>
+                        <th>Break Time</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {employees.map((emp) => {
+                        const record = emp.attendanceRecords[selectedDate];
+                        const status = getAttendanceStatus(emp);
+                        return (
+                          <tr key={emp.id} className={`status-${status}`}>
+                            <td>{emp.name}</td>
+                            <td>{emp.employeeId}</td>
+                            <td>{emp.department || '-'}</td>
+                            <td>{record?.clockInTime || '-'}</td>
+                            <td>{record?.clockOutTime || '-'}</td>
+                            <td>{getTotalHoursWorked(emp)} hrs</td>
+                            <td>{getBreakSummary(emp)}</td>
+                            <td className="status">
+                              <span className={`badge ${status}`}>{status.replace('-', ' ').toUpperCase()}</span>
+                            </td>
+                            <td className="actions">
+                              {status === 'not-marked' || status === 'present' ? (
+                                <>
+                                  {!record?.clockInTime && (
+                                    <button onClick={() => clockIn(emp.id)} className="btn-clock-in">
+                                      Clock In
+                                    </button>
+                                  )}
+                                  {record?.clockInTime && !record?.clockOutTime && (
+                                    <>
+                                      {record?.onBreak ? (
+                                        <button onClick={() => endBreak(emp.id)} className="btn-break-end">
+                                          End Break
+                                        </button>
+                                      ) : (
+                                        <button onClick={() => startBreak(emp.id)} className="btn-break">
+                                          Start Break
+                                        </button>
+                                      )}
+                                      <button onClick={() => clockOut(emp.id)} className="btn-clock-out">
+                                        Clock Out
+                                      </button>
+                                    </>
+                                  )}
+                                  {record?.clockInTime && record?.clockOutTime && (
+                                    <span className="completed">✓ Completed</span>
+                                  )}
+                                </>
+                              ) : null}
+                              {status === 'not-marked' && (
+                                <>
+                                  <button onClick={() => markAbsent(emp.id)} className="btn-absent">
+                                    Absent
+                                  </button>
+                                  <button onClick={() => markLeave(emp.id)} className="btn-leave">
+                                    Leave
+                                  </button>
+                                </>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {view === 'employees' && (
+          <div className="employees-section">
+            <h2>Add New Employee</h2>
+            <div className="employee-form">
+              <input
+                type="text"
+                value={newEmployee.name}
+                onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
+                placeholder="Full Name"
+              />
+              <input
+                type="text"
+                value={newEmployee.employeeId}
+                onChange={(e) => setNewEmployee({ ...newEmployee, employeeId: e.target.value })}
+                placeholder="Employee ID"
+              />
+              <input
+                type="text"
+                value={newEmployee.department}
+                onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
+                placeholder="Department"
+              />
+              <input
+                type="text"
+                value={newEmployee.position}
+                onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
+                placeholder="Position"
+              />
+              <select
+                value={newEmployee.shift}
+                onChange={(e) => setNewEmployee({ ...newEmployee, shift: e.target.value })}
+              >
+                <option value="9-5">9 AM - 5 PM</option>
+                <option value="8-4">8 AM - 4 PM</option>
+                <option value="10-6">10 AM - 6 PM</option>
+                <option value="night">Night Shift</option>
+              </select>
+              <button onClick={addEmployee} className="btn-add">
+                Add Employee
+              </button>
+            </div>
+
+            <h2>Employee Directory</h2>
+            <div className="employees-list">
+              {employees.length === 0 ? (
+                <p>No employees added yet.</p>
+              ) : (
+                employees.map((emp) => (
+                  <div key={emp.id} className="employee-card">
+                    <div className="emp-info">
+                      <h3>{emp.name}</h3>
+                      <p><strong>ID:</strong> {emp.employeeId}</p>
+                      <p><strong>Department:</strong> {emp.department || 'N/A'}</p>
+                      <p><strong>Position:</strong> {emp.position || 'N/A'}</p>
+                      <p><strong>Shift:</strong> {emp.shift}</p>
+                    </div>
                     <button onClick={() => removeEmployee(emp.id)} className="btn-remove">
                       Remove
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         )}
-      </div>
+
+        {view === 'reports' && (
+          <div className="reports-section">
+            <h2>Attendance Reports</h2>
+            <div className="report-container">
+              <h3>Monthly Overview</h3>
+              <div className="report-stats">
+                {employees.map((emp) => {
+                  const presentDays = Object.values(emp.attendanceRecords).filter((r) => r.status === 'present').length;
+                  const absentDays = Object.values(emp.attendanceRecords).filter((r) => r.status === 'absent').length;
+                  const leaveDays = Object.values(emp.attendanceRecords).filter((r) => r.status === 'leave').length;
+                  const totalHours = Object.values(emp.attendanceRecords).reduce((sum, r) => sum + (r.hoursWorked || 0), 0);
+                  return (
+                    <div key={emp.id} className="report-card">
+                      <h4>{emp.name}</h4>
+                      <p>Employee ID: {emp.employeeId}</p>
+                      <div className="report-details">
+                        <span>Present Days: <strong>{presentDays}</strong></span>
+                        <span>Absent Days: <strong>{absentDays}</strong></span>
+                        <span>Leave Days: <strong>{leaveDays}</strong></span>
+                        <span>Total Hours: <strong>{totalHours.toFixed(2)}</strong></span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
