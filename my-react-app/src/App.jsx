@@ -3,12 +3,14 @@ import './App.css'
 
 function App() {
   const [employees, setEmployees] = useState([]);
-  const [newEmployee, setNewEmployee] = useState({ name: '', employeeId: '', department: '', position: '', shift: '9-5' });
+  const [newEmployee, setNewEmployee] = useState({ name: '', employeeId: '', department: '', position: '', shift: '8-5' });
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [view, setView] = useState('attendance'); // attendance, reports, employees
+  const [view, setView] = useState('attendance'); 
   const [breakTime, setBreakTime] = useState({});
+  const [role, setRole] = useState('dev'); 
+  const [currentEmpId, setCurrentEmpId] = useState(null);
 
-  // Load data from localStorage on mount
+  
   useEffect(() => {
     const saved = localStorage.getItem('attendanceData');
     if (saved) {
@@ -16,7 +18,17 @@ function App() {
     }
   }, []);
 
-  // Save to localStorage whenever employees change
+  useEffect(() => {
+    if (role === 'WE TEAM') {
+      setView('reports');
+    } else if (role === 'employee') {
+      setView('attendance');
+      if (employees.length > 0) setCurrentEmpId(employees[0].id);
+    } else if (role === 'dev') {
+      setView('employees');
+    }
+  }, [role, employees]);
+
   useEffect(() => {
     localStorage.setItem('attendanceData', JSON.stringify(employees));
   }, [employees]);
@@ -228,28 +240,57 @@ function App() {
   return (
     <div className="container">
       <div className="App">
-        <h1>Real Work Attendance System</h1>
+        <h1> Attendance System</h1>
 
         <div className="tabs">
-          <button
-            className={`tab-btn ${view === 'attendance' ? 'active' : ''}`}
-            onClick={() => setView('attendance')}
-          >
-            Daily Attendance
-          </button>
-          <button
-            className={`tab-btn ${view === 'employees' ? 'active' : ''}`}
-            onClick={() => setView('employees')}
-          >
-            Manage Employees
-          </button>
-          <button
-            className={`tab-btn ${view === 'reports' ? 'active' : ''}`}
-            onClick={() => setView('reports')}
-          >
-            Reports
-          </button>
+          <div className="role-select">
+            <label>Role:</label>
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="dev">Dev (manage employees)</option>
+              <option value="WE TEAM"> WE TEAM (view reports)</option>
+              <option value="employee">Employee (clock in/out)</option>
+            </select>
+          </div>
+
+          {role !== 'WE TEAM' && (
+            <button
+              className={`tab-btn ${view === 'attendance' ? 'active' : ''}`}
+              onClick={() => setView('attendance')}
+            >
+              Daily Attendance
+            </button>
+          )}
+
+          {role === 'dev' && (
+            <button
+              className={`tab-btn ${view === 'employees' ? 'active' : ''}`}
+              onClick={() => setView('employees')}
+            >
+              Manage Employees
+            </button>
+          )}
+
+          {role !== 'employee' && (
+            <button
+              className={`tab-btn ${view === 'reports' ? 'active' : ''}`}
+              onClick={() => setView('reports')}
+            >
+              Reports
+            </button>
+          )}
         </div>
+
+        {role === 'employee' && (
+          <div className="employee-self-select">
+            <label>Signed in as:</label>
+            <select value={currentEmpId || ''} onChange={(e) => setCurrentEmpId(Number(e.target.value))}>
+              <option value="">-- select employee --</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>{emp.name} ({emp.employeeId})</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {view === 'attendance' && (
           <>
@@ -302,7 +343,11 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {employees.map((emp) => {
+                      {(
+                        role === 'employee'
+                          ? employees.filter((e) => e.id === currentEmpId)
+                          : employees
+                      ).map((emp) => {
                         const record = emp.attendanceRecords[selectedDate];
                         const status = getAttendanceStatus(emp);
                         return (
@@ -318,44 +363,53 @@ function App() {
                               <span className={`badge ${status}`}>{status.replace('-', ' ').toUpperCase()}</span>
                             </td>
                             <td className="actions">
-                              {status === 'not-marked' || status === 'present' ? (
-                                <>
-                                  {!record?.clockInTime && (
-                                    <button onClick={() => clockIn(emp.id)} className="btn-clock-in">
-                                      Clock In
-                                    </button>
-                                  )}
-                                  {record?.clockInTime && !record?.clockOutTime && (
-                                    <>
-                                      {record?.onBreak ? (
-                                        <button onClick={() => endBreak(emp.id)} className="btn-break-end">
-                                          End Break
+                              {(() => {
+                                const canAct = role === 'dev' || (role === 'employee' && emp.id === currentEmpId);
+                                if (!canAct) return <em>Not permitted</em>;
+
+                                return (
+                                  <>
+                                    {status === 'not-marked' || status === 'present' ? (
+                                      <>
+                                        {!record?.clockInTime && (
+                                          <button onClick={() => clockIn(emp.id)} className="btn-clock-in">
+                                            Clock In
+                                          </button>
+                                        )}
+                                        {record?.clockInTime && !record?.clockOutTime && (
+                                          <>
+                                            {record?.onBreak ? (
+                                              <button onClick={() => endBreak(emp.id)} className="btn-break-end">
+                                                End Break
+                                              </button>
+                                            ) : (
+                                              <button onClick={() => startBreak(emp.id)} className="btn-break">
+                                                Start Break
+                                              </button>
+                                            )}
+                                            <button onClick={() => clockOut(emp.id)} className="btn-clock-out">
+                                              Clock Out
+                                            </button>
+                                          </>
+                                        )}
+                                        {record?.clockInTime && record?.clockOutTime && (
+                                          <span className="completed">✓ Completed</span>
+                                        )}
+                                      </>
+                                    ) : null}
+                                    {status === 'not-marked' && (
+                                      <>
+                                        <button onClick={() => markAbsent(emp.id)} className="btn-absent">
+                                          Absent
                                         </button>
-                                      ) : (
-                                        <button onClick={() => startBreak(emp.id)} className="btn-break">
-                                          Start Break
+                                        <button onClick={() => markLeave(emp.id)} className="btn-leave">
+                                          Leave
                                         </button>
-                                      )}
-                                      <button onClick={() => clockOut(emp.id)} className="btn-clock-out">
-                                        Clock Out
-                                      </button>
-                                    </>
-                                  )}
-                                  {record?.clockInTime && record?.clockOutTime && (
-                                    <span className="completed">✓ Completed</span>
-                                  )}
-                                </>
-                              ) : null}
-                              {status === 'not-marked' && (
-                                <>
-                                  <button onClick={() => markAbsent(emp.id)} className="btn-absent">
-                                    Absent
-                                  </button>
-                                  <button onClick={() => markLeave(emp.id)} className="btn-leave">
-                                    Leave
-                                  </button>
-                                </>
-                              )}
+                                      </>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </td>
                           </tr>
                         );
@@ -400,9 +454,9 @@ function App() {
                 value={newEmployee.shift}
                 onChange={(e) => setNewEmployee({ ...newEmployee, shift: e.target.value })}
               >
-                <option value="9-5">9 AM - 5 PM</option>
-                <option value="8-4">8 AM - 4 PM</option>
-                <option value="10-6">10 AM - 6 PM</option>
+                <option value="8-5">8:00AM - 5:00PM</option>
+                <option value="8:30-5:30">8:30AM - 5:30PM</option>
+                <option value="9-6">9:00AM - 6:00PM</option>
                 <option value="night">Night Shift</option>
               </select>
               <button onClick={addEmployee} className="btn-add">
